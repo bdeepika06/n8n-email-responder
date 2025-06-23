@@ -1,0 +1,283 @@
+{
+  "name": "AI Email Auto-Responder",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -960,
+        -300
+      ],
+      "id": "7e65cbe0-83c5-4989-b6df-f6d61189e7c5",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IfJKynEkiTMcdvsF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are my AI email assistant. Write professional, friendly, human-like email replies for me.\n\nContext:\n- Sender Name: {{ $json[\"SenderName\"] }}\n- Weekend: {{ $json[\"isWeekend\"] }}\n\nRules:\n\n1️⃣ If Weekend is true:\n- Reply with:\nHi {{ $json[\"SenderName\"] }},\n\nI am currently away for the weekend. I will respond Monday to Friday, 9 AM to 5 PM CST.\n\nThanks & Regards,<br>\nDeepika Betha<br>\nFrisco, Texas<br>\n+1-908-767-1234\n\n2️⃣ If Weekend is false and the email is about interview scheduling:\n- Reply with:\nHi {{ $json[\"SenderName\"] }},\n\nThank you for reaching out regarding interview scheduling.  \nI am available Monday to Friday, from 9 AM to 5 PM CST.  \nKindly suggest some convenient time slots for the interview.  \nYou can also reach me directly at +1-908-767-1234 for faster coordination.\n\nThanks & Regards,<br>\nDeepika Betha<br>\nFrisco, Texas<br>\n+1-908-767-1234\n\nGeneral Instructions:\n\n- Use polite, natural, and professional language.\n- Use HTML formatting (add <br> for line breaks where applicable).\n- Avoid robotic or repetitive wording.\n- If any information is missing, reply as much as possible based on available context.\n- Never output anything outside these instructions.\n",
+              "role": "system"
+            },
+            {
+              "content": "=Email snippet: {{ $json[\"snippet\"] }}\n\nPlease generate a reply following the system instructions.\n"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -80,
+        120
+      ],
+      "id": "6d59e72a-f93c-4982-a12c-423c860f02bc",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "PupZt9YOpUJm0VRm",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $node[\"Edit Fields\"].json[\"From\"] }}\n\n",
+        "subject": "={{ $node[\"Edit Fields\"].json[\"Subject\"] }}\n",
+        "message": "=\t{{ $json[\"message\"][\"content\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        520,
+        -60
+      ],
+      "id": "1c79129c-9bbf-446b-b107-8ebb4926d3b8",
+      "name": "Gmail",
+      "webhookId": "633c5680-9edd-40eb-83d7-d544bc5fc31a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "IfJKynEkiTMcdvsF",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d4334760-5119-40a3-acfa-bf879311b554",
+              "name": "Name\tType\tValue From",
+              "value": "={{ $json[\"From\"].includes('<') ? $json[\"From\"].match(/<(.*?)>/)[1] : $json[\"From\"] }}\n",
+              "type": "string"
+            },
+            {
+              "id": "0bd4ed4e-1ae0-4a93-a474-4bcf8168add3",
+              "name": "Subject",
+              "value": "={{ $json[\"Subject\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "11533915-5f23-43e4-b333-16a1cddcd091",
+              "name": "SenderName",
+              "value": "={{ $json[\"From\"].split('<')[0].trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -200,
+        -280
+      ],
+      "id": "024e36e8-72d1-467b-b908-a129ee5d9444",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ac9c523c-8c0e-4d2c-ab1b-9052060892dd",
+              "leftValue": "labels[].name",
+              "rightValue": "CATEGORY_PROMOTIONS",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "45ce7d76-377e-460e-ba4d-58a55ebf535a",
+              "leftValue": "labels[].name",
+              "rightValue": "SPAM",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "f2773ea1-dd63-4d6c-8df5-703c8e517632",
+              "leftValue": "From",
+              "rightValue": "noreply@",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "93df75d5-4c9f-4d4c-b12e-f9e8b7a41291",
+              "leftValue": "={{ $json[\"Subject\"].toLowerCase() }}\n",
+              "rightValue": "interview",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "b8470f33-7161-4205-a75c-5d4f2d1497ae",
+              "leftValue": "From",
+              "rightValue": "deepikabetha68@gmail.com",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        -700,
+        -340
+      ],
+      "id": "d22d0c7f-dbe3-4a47-98a6-c9ac3a74abbd",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const currentDate = new Date($now.toISO());\n\nreturn {\n  json: {\n    ...$json,\n    isWeekend: (currentDate.getDay() === 0 || currentDate.getDay() === 6)\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        -340
+      ],
+      "id": "92a8dd95-cee8-4f44-b427-05805642fda7",
+      "name": "Code"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "main": [
+        [
+          {
+            "node": "Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail": {
+      "main": [
+        []
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "OpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "43a5e784-25f4-4e8b-9870-7df851e6e9dc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e9004f66d873b9130e81427085cf6108ccd0c3f7dc2f6b358b1d54dab7491555"
+  },
+  "id": "tnlA6rua74ApVInb",
+  "tags": []
+}
